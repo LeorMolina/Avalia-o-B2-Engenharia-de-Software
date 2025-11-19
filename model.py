@@ -29,23 +29,50 @@ class AcoesModel:
             cursor.close()
             conexao.close()
 
-    def listar_acoes(self):
-        """Retorna todos os registros de ações sustentáveis."""
+    def listar_acoes(self, categoria_filtro=None):
+        """Retorna todos os registros de ações sustentáveis, opcionalmente filtrados por categoria."""
         conexao = conectar()
         if conexao is None:
             return []
 
         sql = "SELECT id, descricao, categoria, impacto, data FROM acoes_sustentaveis"
+        dados = []
+
+        if categoria_filtro:
+            sql += " WHERE categoria = %s"
+            dados.append(categoria_filtro)
+            
+        sql += " ORDER BY data DESC"
+
         cursor = conexao.cursor()
 
         try:
-            cursor.execute(sql)
-            # Retorna todos os resultados como uma lista de tuplas
+            cursor.execute(sql, dados)
             resultados = cursor.fetchall()
             return resultados
         except Error as e:
             print(f"Erro ao listar ações: {e}")
             return []
+        finally:
+            cursor.close()
+            conexao.close()
+
+    def contar_total(self):
+        """Retorna a contagem total de registros na tabela."""
+        conexao = conectar()
+        if conexao is None:
+            return 0
+
+        sql = "SELECT COUNT(*) FROM acoes_sustentaveis"
+        cursor = conexao.cursor()
+
+        try:
+            cursor.execute(sql)
+            total = cursor.fetchone()[0]
+            return total
+        except Error as e:
+            print(f"Erro ao contar ações: {e}")
+            return 0
         finally:
             cursor.close()
             conexao.close()
@@ -63,7 +90,6 @@ class AcoesModel:
         try:
             cursor.execute(sql, dados)
             conexao.commit()
-            # Verifica se alguma linha foi afetada para confirmar a remoção
             if cursor.rowcount > 0:
                 return True, f"Ação ID {id_acao} removida com sucesso."
             else:
@@ -75,38 +101,23 @@ class AcoesModel:
             cursor.close()
             conexao.close()
 
-if __name__ == '__main__':
-    # Teste do Model (Critério de Sucesso) [cite: 70]
-    model = AcoesModel()
-    
-    # 1. Inserir (adicionar_acao)
-    print("\nTeste de Inserção:")
-    sucesso, msg = model.adicionar_acao("Economia de 50W em monitor", "Energia", "Média", "2025-11-12")
-    print(f"Status: {sucesso}, Mensagem: {msg}")
+    def validar_login(self, usuario, senha):
+        """Verifica as credenciais de login na tabela usuarios."""
+        conexao = conectar()
+        if conexao is None:
+            return None 
 
-    # 2. Listar (listar_acoes)
-    print("\nTeste de Listagem:")
-    acoes = model.listar_acoes()
-    if acoes:
-        print("Ações cadastradas (última inserida):")
-        for acao in acoes:
-            print(acao)
-    else:
-        print("Nenhuma ação encontrada.")
-    
-    # 3. Remover (remover_acao) - Remove a ação que acabamos de adicionar (se tiver dado certo)
-    if sucesso and acoes:
-        id_para_remover = acoes[-1][0] # Pega o ID da última ação
-        print(f"\nTeste de Remoção (ID {id_para_remover}):")
-        sucesso_rem, msg_rem = model.remover_acao(id_para_remover)
-        print(f"Status: {sucesso_rem}, Mensagem: {msg_rem}")
+        sql = "SELECT usuario FROM usuarios WHERE usuario = %s AND senha = %s"
+        dados = (usuario, senha)
+        cursor = conexao.cursor()
 
-        # Listar novamente para confirmar
-        print("\nListagem após remoção:")
-        acoes_restantes = model.listar_acoes()
-        for acao in acoes_restantes:
-            print(acao)
-        if len(acoes_restantes) < len(acoes):
-             print("Remoção confirmada.")
-        else:
-             print("Remoção falhou.")
+        try:
+            cursor.execute(sql, dados)
+            resultado = cursor.fetchone() 
+            return resultado
+        except Error as e:
+            print(f"Erro ao validar login: {e}")
+            return None
+        finally:
+            cursor.close()
+            conexao.close()

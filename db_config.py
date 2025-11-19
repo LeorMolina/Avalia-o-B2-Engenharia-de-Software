@@ -12,7 +12,10 @@ def conectar():
             host="localhost",
             user="root",
             password="Root",  # Mantenha o padrão da prova, mas em produção use variáveis de ambiente!
-            database="ecotrack_db"
+            database="ecotrack_db",
+            # CORREÇÃO CRÍTICA: Tenta forçar o uso do plugin de autenticação mais antigo e compatível
+            auth_plugin='mysql_native_password', 
+            charset='latin1' 
         )
         return conn
     except Error as e:
